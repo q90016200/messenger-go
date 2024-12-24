@@ -41,6 +41,7 @@ func (d *Discord) SendMessage(message string) error {
 		return errors.New(fmt.Sprintf("[Discord] failed to send message status: %s", resp.Status()))
 	}
 
+	fmt.Printf("\n\n[Telegram] sendMessage: %s\n\n", string(resp.Body()))
 	return nil
 }
 

@@ -37,7 +37,8 @@ func (t *Telegram) SendMessage(channelID string, text string) error {
 		SetHeaders(headers).
 		SetFormData(params).Post(requestUrl)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("\n\n[Telegram] sendMessage err: %s\n\n", err.Error()))
 	}
-	return errors.New(fmt.Sprintf("\n\n[Telegram] sendMessage: %s\n\n", string(resp.Body())))
+	fmt.Printf("\n\n[Telegram] sendMessage: %s\n\n", string(resp.Body()))
+	return nil
 }
