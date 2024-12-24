@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"net/url"
+	"time"
 )
 
 type Discord struct {
@@ -12,37 +13,42 @@ type Discord struct {
 	client     *resty.Client
 }
 
-func NewDiscord(webHookUrl string) (*Discord, error) {
-	err := validateWebhookURL(webHookUrl)
-	if err != nil {
-		return nil, err
-	}
-
+func NewDiscord(webHookUrl string) *Discord {
 	client := resty.New()
 
 	return &Discord{
 		WebHookUrl: webHookUrl,
 		client:     client,
-	}, nil
+	}
 }
 
 func (d *Discord) SendMessage(message string) error {
-	payload := map[string]string{"content": message}
-	resp, err := d.client.R().
-		SetBody(payload).
-		Post(d.WebHookUrl)
+	err := validateWebhookURL(d.WebHookUrl)
 	if err != nil {
 		return err
 	}
+
+	payload := map[string]string{"content": message}
+	client := d.client
+	client = client.SetTimeout(time.Duration(10) * time.Second)
+	resp, err := client.R().
+		SetBody(payload).
+		Post(d.WebHookUrl)
+	if err != nil {
+		return errors.New(fmt.Sprintf("[Discord] failed to send message err: %v", err))
+	}
 	if resp.StatusCode() >= 400 {
-		return fmt.Errorf("failed to send message: %s", resp.Status())
+		return errors.New(fmt.Sprintf("[Discord] failed to send message status: %s", resp.Status()))
 	}
 
 	return nil
 }
 
 //func (d *Discord) SendEmbed() {
-//
+//	err := validateWebhookURL(d.WebHookUrl)
+//	if err != nil {
+//		return err
+//	}
 //}
 
 // 验证 webhook URL 是否有效
