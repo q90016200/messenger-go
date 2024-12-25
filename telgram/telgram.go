@@ -8,19 +8,19 @@ import (
 )
 
 type Telegram struct {
-	Token  string
-	client *resty.Client
+	botToken string
+	client   *resty.Client
 }
 
 func NewTelegram(token string) *Telegram {
 	return &Telegram{
-		Token:  token,
-		client: resty.New(),
+		botToken: token,
+		client:   resty.New(),
 	}
 }
 
 func (t *Telegram) SendMessage(channelID string, text string) error {
-	requestUrl := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.Token)
+	requestUrl := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.botToken)
 
 	client := t.client
 	client = client.SetTimeout(time.Duration(10) * time.Second)
