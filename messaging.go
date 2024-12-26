@@ -13,9 +13,9 @@ type Messenger interface {
 
 type Manager struct {
 	//line     Messenger
-	lineMessage Messenger
-	lineNotify  Messenger
-	telegram    Messenger
+	lineMessage *line.LineMessage
+	lineNotify  *line.LineNotify
+	telegram    *telgram.Telegram
 	discord     *discord.Discord
 }
 
