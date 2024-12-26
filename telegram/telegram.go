@@ -3,43 +3,52 @@ package telegram
 import (
 	"errors"
 	"fmt"
-	"github.com/go-resty/resty/v2"
+	"io"
+	"net/http"
+	"net/url"
 	"time"
 )
 
 type Telegram struct {
 	botToken string
-	client   *resty.Client
 }
 
 func NewTelegram(token string) *Telegram {
 	return &Telegram{
 		botToken: token,
-		client:   resty.New(),
 	}
 }
 
+func (t *Telegram) Platform() string {
+	return "Telegram"
+}
+
 func (t *Telegram) SendMessage(channelID string, text string) error {
-	requestUrl := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.botToken)
-
-	client := t.client
-	client = client.SetTimeout(time.Duration(10) * time.Second)
-
-	headers := make(map[string]string)
-	headers["Content-Type"] = "application/x-www-form-urlencoded"
-
-	params := map[string]string{
-		"chat_id":    channelID,
-		"text":       text,
-		"parse_mode": "MarkdownV2",
+	apiURL := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.botToken)
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+	payload := url.Values{
+		"chat_id":    {channelID},
+		"text":       {text},
+		"parse_mode": {"MarkdownV2"},
 	}
 
-	resp, err := client.R().
-		SetHeaders(headers).
-		SetFormData(params).Post(requestUrl)
+	resp, err := client.PostForm(apiURL, payload)
 	if err != nil {
-		return errors.New(fmt.Sprintf("\n\n[Telegram] sendMessage err: %s\n\n", err.Error()))
+		return err
 	}
-	fmt.Printf("\n\n[Telegram] sendMessage: %s\n\n", string(resp.Body()))
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("failed to send message, resp.StatusCode: %d", resp.StatusCode))
+	}
+
+	// read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.New(fmt.Sprintf("failed to send message, response error: %s", err))
+	}
+
+	fmt.Printf("\r\n[Telegram] sendMessage: %s\r\n", string(body))
 	return nil
 }

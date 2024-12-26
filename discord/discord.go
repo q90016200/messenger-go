@@ -1,25 +1,28 @@
 package discord
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-resty/resty/v2"
+	"net/http"
 	"net/url"
 	"time"
 )
 
 type Discord struct {
 	webHookUrl string
-	client     *resty.Client
 }
 
 func NewDiscord(webHookUrl string) *Discord {
-	client := resty.New()
 
 	return &Discord{
 		webHookUrl: webHookUrl,
-		client:     client,
 	}
+}
+
+func (d *Discord) Platform() string {
+	return "Discord"
 }
 
 func (d *Discord) SendMessage(message string) error {
@@ -29,28 +32,39 @@ func (d *Discord) SendMessage(message string) error {
 	}
 
 	payload := map[string]string{"content": message}
-	client := d.client
-	client = client.SetTimeout(time.Duration(10) * time.Second)
-	resp, err := client.R().
-		SetBody(payload).
-		Post(d.webHookUrl)
+	data, err := json.Marshal(payload)
 	if err != nil {
-		return errors.New(fmt.Sprintf("[Discord] failed to send message err: %v", err))
-	}
-	if resp.StatusCode() >= 400 {
-		return errors.New(fmt.Sprintf("[Discord] failed to send message status: %s", resp.Status()))
+		return err
 	}
 
-	fmt.Printf("\n\n[Discord] sendMessage: %s\n\n", string(resp.Body()))
+	req, err := http.NewRequest("POST", d.webHookUrl, bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		return errors.New(fmt.Sprintf("failed to send message, resp.StatusCode: %d", resp.StatusCode))
+	}
+
+	// read response body
+	//body, err := io.ReadAll(resp.Body)
+	//if err != nil {
+	//	return errors.New(fmt.Sprintf("Discord response error: %s", err))
+	//}
+
+	fmt.Printf("\r\n[Discord] sendMessage successfully")
 	return nil
 }
-
-//func (d *Discord) SendEmbed() {
-//	err := validateWebhookURL(d.WebHookUrl)
-//	if err != nil {
-//		return err
-//	}
-//}
 
 // 验证 webhook URL 是否有效
 func validateWebhookURL(webhookURL string) error {

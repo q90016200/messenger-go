@@ -1,26 +1,26 @@
 package line
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-resty/resty/v2"
+	"io"
+	"net/http"
+	"time"
 )
 
 type LineMessage struct {
 	channelAccessToken string
-	request            *resty.Request
 }
 
 func NewLineMessage(channelAccessToken string) *LineMessage {
-	client := resty.New()
 	headers := map[string]string{}
 	headers["Content-Type"] = "application/json"
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", channelAccessToken)
-	request := client.R().SetHeaders(headers)
 
 	return &LineMessage{
 		channelAccessToken: channelAccessToken,
-		request:            request,
 	}
 }
 
@@ -32,7 +32,12 @@ type textMessage struct {
 	} `json:"messages"`
 }
 
+func (lm *LineMessage) Platform() string {
+	return "LineMessage"
+}
+
 func (lm *LineMessage) TextMessage(channelID string, message string) error {
+	url := "https://api.line.me/v2/bot/message/push"
 	payload := textMessage{
 		To: channelID,
 		Messages: []struct {
@@ -42,13 +47,38 @@ func (lm *LineMessage) TextMessage(channelID string, message string) error {
 			{Type: "text", Text: message},
 		},
 	}
-
-	resp, err := lm.request.SetBody(payload).
-		Post("https://api.line.me/v2/bot/message/push")
-
+	data, err := json.Marshal(payload)
 	if err != nil {
-		return errors.New(fmt.Sprintf("\n\n[Line-Message] TextMessage err: %s\n\n", err.Error()))
+		return err
 	}
-	fmt.Printf("\n\n[Line-Message] sendMessage: %s\n\n", string(resp.Body()))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", lm.channelAccessToken))
+
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("failed to send message, resp.StatusCode: %d", resp.StatusCode))
+	}
+
+	// read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.New(fmt.Sprintf("failed to send message, response error: %s", err))
+	}
+
+	fmt.Printf("\r\n[Telegram] sendMessage: %s\r\n", string(body))
+
 	return nil
 }
