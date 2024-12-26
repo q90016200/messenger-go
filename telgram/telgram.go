@@ -29,8 +29,9 @@ func (t *Telegram) SendMessage(channelID string, text string) error {
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 	params := map[string]string{
-		"chat_id": channelID,
-		"text":    text,
+		"chat_id":    channelID,
+		"text":       text,
+		"parse_mode": "MarkdownV2",
 	}
 
 	resp, err := client.R().
