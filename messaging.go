@@ -3,7 +3,7 @@ package messenger_go
 import (
 	"github.com/q90016200/messenger-go/discord"
 	"github.com/q90016200/messenger-go/line"
-	"github.com/q90016200/messenger-go/telgram"
+	"github.com/q90016200/messenger-go/telegram"
 )
 
 type Messenger interface {
@@ -15,7 +15,7 @@ type Manager struct {
 	//line     Messenger
 	lineMessage *line.LineMessage
 	lineNotify  *line.LineNotify
-	telegram    *telgram.Telegram
+	telegram    *telegram.Telegram
 	discord     *discord.Discord
 }
 
@@ -41,6 +41,6 @@ func (m *Manager) Discord(webhookUrl string) *discord.Discord {
 	return discord.NewDiscord(webhookUrl)
 }
 
-func (m *Manager) Telegram(botToken string) *telgram.Telegram {
-	return telgram.NewTelegram(botToken)
+func (m *Manager) Telegram(botToken string) *telegram.Telegram {
+	return telegram.NewTelegram(botToken)
 }
