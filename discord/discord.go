@@ -9,7 +9,7 @@ import (
 )
 
 type Discord struct {
-	WebHookUrl string
+	webHookUrl string
 	client     *resty.Client
 }
 
@@ -17,13 +17,13 @@ func NewDiscord(webHookUrl string) *Discord {
 	client := resty.New()
 
 	return &Discord{
-		WebHookUrl: webHookUrl,
+		webHookUrl: webHookUrl,
 		client:     client,
 	}
 }
 
 func (d *Discord) SendMessage(message string) error {
-	err := validateWebhookURL(d.WebHookUrl)
+	err := validateWebhookURL(d.webHookUrl)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func (d *Discord) SendMessage(message string) error {
 	client = client.SetTimeout(time.Duration(10) * time.Second)
 	resp, err := client.R().
 		SetBody(payload).
-		Post(d.WebHookUrl)
+		Post(d.webHookUrl)
 	if err != nil {
 		return errors.New(fmt.Sprintf("[Discord] failed to send message err: %v", err))
 	}
