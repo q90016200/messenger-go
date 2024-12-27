@@ -23,13 +23,13 @@ func (t *Telegram) Platform() string {
 	return "Telegram"
 }
 
-func (t *Telegram) SendMessage(channelID string, text string) error {
+func (t *Telegram) SendMessage(chatId string, text string) error {
 	apiURL := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.botToken)
 	client := http.Client{
 		Timeout: 5 * time.Second,
 	}
 	payload := url.Values{
-		"chat_id":    {channelID},
+		"chat_id":    {chatId},
 		"text":       {text},
 		"parse_mode": {"MarkdownV2"},
 	}
