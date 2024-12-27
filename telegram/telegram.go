@@ -1,11 +1,12 @@
 package telegram
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -23,24 +24,29 @@ func (t *Telegram) Platform() string {
 	return "Telegram"
 }
 
-func (t *Telegram) SendMessage(chatId string, text string) error {
+func (t *Telegram) SendMessage(chatID string, text string) error {
 	apiURL := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.botToken)
 	client := http.Client{
 		Timeout: 5 * time.Second,
 	}
-	payload := url.Values{
-		"chat_id":    {chatId},
-		"text":       {text},
-		"parse_mode": {"MarkdownV2"},
+	payload := map[string]string{
+		"chat_id":    chatID,
+		"text":       text,
+		"parse_mode": "MarkdownV2",
 	}
-
-	resp, err := client.PostForm(apiURL, payload)
+	data, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("failed to send message, resp.StatusCode: %d", resp.StatusCode))
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
 	}
 
 	// read response body
@@ -49,6 +55,10 @@ func (t *Telegram) SendMessage(chatId string, text string) error {
 		return errors.New(fmt.Sprintf("failed to send message, response error: %s", err))
 	}
 
-	fmt.Printf("\r\n[Telegram] sendMessage: %s\r\n", string(body))
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("failed to send message, resp.StatusCode: %d ; resp: %s", resp.StatusCode, string(body)))
+	}
+
+	//fmt.Printf("\r\n[Telegram] sendMessage: %s \r\n", string(body))
 	return nil
 }

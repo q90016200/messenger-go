@@ -36,7 +36,7 @@ func main() {
 
 	// telegram
 	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
-		err := manager.Telegram(os.Getenv("TELEGRAM_BOT_TOKEN")).SendMessage(os.Getenv("TELEGRAM_CHANNEL_ID"), testMsg)
+		err := manager.Telegram(os.Getenv("TELEGRAM_BOT_TOKEN")).SendMessage(os.Getenv("TELEGRAM_CHAT_ID"), testMsg)
 		if err != nil {
 			fmt.Println("Error sending message:", err)
 		}

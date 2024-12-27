@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -52,17 +53,18 @@ func (d *Discord) SendMessage(message string) error {
 	}
 
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusNoContent {
-		return errors.New(fmt.Sprintf("failed to send message, resp.StatusCode: %d", resp.StatusCode))
-	}
 
 	// read response body
-	//body, err := io.ReadAll(resp.Body)
-	//if err != nil {
-	//	return errors.New(fmt.Sprintf("Discord response error: %s", err))
-	//}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Discord response error: %s", err))
+	}
 
-	fmt.Printf("\r\n[Discord] sendMessage successfully")
+	if resp.StatusCode != http.StatusNoContent {
+		return errors.New(fmt.Sprintf("failed to send message, resp.StatusCode: %d ; resp: %s", resp.StatusCode, string(body)))
+	}
+
+	fmt.Printf("\r\n[Discord] sendMessage successfully \r\n")
 	return nil
 }
 
